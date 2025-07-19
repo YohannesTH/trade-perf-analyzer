@@ -1,14 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StrategyForm from "@/components/strategy-form";
 import BacktestResults from "@/components/backtest-results";
 import { BacktestResult } from "@shared/schema";
-import { TrendingUp, BarChart3, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, BarChart3, DollarSign, Activity, LogOut, User } from "lucide-react";
 
 export default function Home() {
+  const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, authLoading, toast]);
 
   const handleBacktestComplete = (result: BacktestResult) => {
     setBacktestResult(result);
@@ -23,8 +43,48 @@ export default function Home() {
     setIsLoading(false);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-slate-600 dark:text-slate-400">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      {/* Header with user info and logout */}
+      <div className="bg-white dark:bg-slate-800 shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                Welcome, {user?.firstName || user?.email || 'User'}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = "/api/logout"}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">

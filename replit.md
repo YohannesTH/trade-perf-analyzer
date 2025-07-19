@@ -26,7 +26,8 @@ The application uses a modern full-stack architecture with the following key com
   - Node.js/Express server for web serving and API routing
   - Python/FastAPI service for backtesting computations
 - **Database**: PostgreSQL with Drizzle ORM for data persistence
-- **Session Management**: PostgreSQL-based session storage
+- **Authentication**: Replit Auth integration with OpenID Connect
+- **Session Management**: PostgreSQL-based session storage with connect-pg-simple
 
 ### Build System
 - **Bundler**: Vite for frontend development and building

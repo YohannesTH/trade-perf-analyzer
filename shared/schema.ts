@@ -1,4 +1,16 @@
 import { z } from "zod";
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  serial,
+  integer,
+  decimal,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 
 // Strategy types
 export const strategyTypes = ["sma_crossover", "rsi_threshold"] as const;
@@ -70,6 +82,56 @@ export const backtestResultSchema = z.object({
   })),
 });
 
+// Database Tables
+
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User table for Replit Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Backtests table to store test parameters and results
+export const backtests = pgTable("backtests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  ticker: varchar("ticker", { length: 10 }).notNull(),
+  startDate: varchar("start_date").notNull(),
+  endDate: varchar("end_date").notNull(),
+  strategy: varchar("strategy").notNull(),
+  parameters: jsonb("parameters").notNull(),
+  initialCapital: decimal("initial_capital", { precision: 12, scale: 2 }).notNull(),
+  finalValue: decimal("final_value", { precision: 12, scale: 2 }).notNull(),
+  totalReturn: decimal("total_return", { precision: 8, scale: 4 }).notNull(),
+  results: jsonb("results").notNull(), // Store complete BacktestResult
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Schema types
+export const insertUserSchema = createInsertSchema(users);
+export const insertBacktestSchema = createInsertSchema(backtests);
+
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type InsertBacktest = typeof backtests.$inferInsert;
+export type Backtest = typeof backtests.$inferSelect;
+
+// Zod types
 export type BacktestRequest = z.infer<typeof backtestRequestSchema>;
 export type SmaParameters = z.infer<typeof smaParametersSchema>;
 export type RsiParameters = z.infer<typeof rsiParametersSchema>;
