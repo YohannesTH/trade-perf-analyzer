@@ -84,19 +84,45 @@ The application uses a modern full-stack architecture with the following key com
 ## Deployment Strategy
 
 ### Production Build
-- Frontend builds to static files via Vite
+- Frontend builds to static files via Vite (`npm run build`)
 - Backend compiles TypeScript to ESM modules via esbuild
-- Separate Python service deployment for backtesting engine
+- Python FastAPI service runs alongside Node.js server
+- Replit Deployments with autoscale support
 
 ### Database Setup
 - PostgreSQL database with Drizzle ORM migrations
-- Environment-based database URL configuration
-- Session storage using connect-pg-simple
+- Environment-based database URL configuration via Replit Secrets
+- Session storage using connect-pg-simple with PostgreSQL backend
+- Automatic schema updates with `npm run db:push`
 
 ### Environment Configuration
-- Development: Hot reloading with Vite dev server
-- Production: Static file serving with compiled backend
-- Database: Environment variable-based configuration
+- **Development**: Hot reloading with Vite dev server (`npm run dev`)
+- **Production**: Compiled static files served by Express (`npm run start`)
+- **Secrets Management**: Replit Secrets for secure environment variables
+- **Authentication**: Replit Auth with OpenID Connect integration
+
+### Replit Deployment Configuration
+```toml
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
+
+[[ports]]
+localPort = 5000    # Express server (main application)
+externalPort = 80   # Public web access
+
+[[ports]]
+localPort = 8001    # Python FastAPI (backtesting API)
+externalPort = 3000 # Internal service communication
+```
+
+### Deployment Files
+- `DEPLOY_GUIDE.md` - Quick 10-minute deployment steps
+- `DEPLOYMENT.md` - Comprehensive deployment documentation
+- `ENVIRONMENT_SETUP.md` - Secrets and environment variable configuration
+- `build.sh` - Production build script
+- `start-production.sh` - Production startup script
 
 ### Key Architectural Decisions
 
