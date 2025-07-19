@@ -9,8 +9,8 @@ class StrategyType(str, Enum):
 
 class BacktestRequest(BaseModel):
     ticker: str = Field(..., min_length=1, max_length=10, description="Stock ticker symbol")
-    start_date: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$', description="Start date in YYYY-MM-DD format")
-    end_date: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$', description="End date in YYYY-MM-DD format")
+    start_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$', description="Start date in YYYY-MM-DD format")
+    end_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$', description="End date in YYYY-MM-DD format")
     strategy: StrategyType = Field(..., description="Trading strategy to backtest")
     parameters: Dict[str, Union[str, int, float]] = Field(..., description="Strategy parameters")
     initial_capital: float = Field(..., ge=1000, description="Initial capital in USD")
@@ -32,7 +32,7 @@ class BacktestRequest(BaseModel):
 
 class Trade(BaseModel):
     date: str = Field(..., description="Trade execution date")
-    action: str = Field(..., regex=r'^(buy|sell)$', description="Trade action")
+    action: str = Field(..., pattern=r'^(buy|sell)$', description="Trade action")
     price: float = Field(..., gt=0, description="Execution price")
     shares: int = Field(..., gt=0, description="Number of shares")
     value: float = Field(..., description="Total trade value")

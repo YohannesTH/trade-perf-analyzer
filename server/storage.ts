@@ -1,38 +1,29 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import { type BacktestResult } from "@shared/schema";
 
-// modify the interface with any CRUD methods
-// you might need
-
+// Storage interface for the backtesting application
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // For now, we mainly proxy to Python backend so minimal storage needed
+  saveBacktestResult(result: BacktestResult): Promise<string>;
+  getBacktestResult(id: string): Promise<BacktestResult | undefined>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
+  private backtestResults: Map<string, BacktestResult>;
   currentId: number;
 
   constructor() {
-    this.users = new Map();
+    this.backtestResults = new Map();
     this.currentId = 1;
   }
 
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  async saveBacktestResult(result: BacktestResult): Promise<string> {
+    const id = `backtest_${this.currentId++}`;
+    this.backtestResults.set(id, result);
+    return id;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getBacktestResult(id: string): Promise<BacktestResult | undefined> {
+    return this.backtestResults.get(id);
   }
 }
 

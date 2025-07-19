@@ -132,7 +132,7 @@ async def validate_ticker(ticker: str):
         raise HTTPException(status_code=404, detail=f"Invalid ticker or data unavailable: {str(e)}")
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PYTHON_PORT", 8001))
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
