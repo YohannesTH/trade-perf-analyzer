@@ -145,6 +145,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Strategy Builder CRUD (protected)
+  app.get("/api/strategies", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userStrategies = await storage.getUserStrategies(userId);
+      res.json(userStrategies);
+    } catch (error) {
+      console.error("Error fetching strategies:", error);
+      res.status(500).json({ error: "Failed to fetch strategies" });
+    }
+  });
+
+  app.post("/api/strategies", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const newStrategy = await storage.createStrategy(userId, req.body);
+      res.json(newStrategy);
+    } catch (error) {
+      console.error("Error saving strategy:", error);
+      res.status(500).json({ error: "Failed to save strategy" });
+    }
+  });
+
+  app.delete("/api/strategies/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const strategyId = parseInt(req.params.id);
+      const strategy = await storage.getStrategy(strategyId);
+      if (!strategy || strategy.userId !== req.user.claims.sub) {
+        return res.status(403).json({ error: "Access denied or strategy not found" });
+      }
+      await storage.deleteStrategy(strategyId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting strategy:", error);
+      res.status(500).json({ error: "Failed to delete strategy" });
+    }
+  });
+
+  // Portfolios CRUD (protected)
+  app.get("/api/portfolios", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userPortfolios = await storage.getUserPortfolios(userId);
+      res.json(userPortfolios);
+    } catch (error) {
+      console.error("Error fetching portfolios:", error);
+      res.status(500).json({ error: "Failed to fetch portfolios" });
+    }
+  });
+
+  app.post("/api/portfolios", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { name, description, rebalanceFrequency, assets } = req.body;
+      const newPortfolio = await storage.createPortfolio(userId, { name, description, rebalanceFrequency }, assets);
+      res.json(newPortfolio);
+    } catch (error) {
+      console.error("Error creating portfolio:", error);
+      res.status(500).json({ error: "Failed to create portfolio" });
+    }
+  });
+
+  app.delete("/api/portfolios/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const portfolioId = parseInt(req.params.id);
+      const portfolio = await storage.getPortfolio(portfolioId);
+      if (!portfolio || portfolio.userId !== req.user.claims.sub) {
+        return res.status(403).json({ error: "Access denied or portfolio not found" });
+      }
+      await storage.deletePortfolio(portfolioId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting portfolio:", error);
+      res.status(500).json({ error: "Failed to delete portfolio" });
+    }
+  });
+
+  // Trade Journal CRUD (protected)
+  app.get("/api/journal", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const entries = await storage.getJournalEntries(userId);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching journal entries:", error);
+      res.status(500).json({ error: "Failed to fetch journal entries" });
+    }
+  });
+
+  app.post("/api/journal", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const entry = await storage.createJournalEntry(userId, req.body);
+      res.json(entry);
+    } catch (error) {
+      console.error("Error creating journal entry:", error);
+      res.status(500).json({ error: "Failed to create journal entry" });
+    }
+  });
+
+  // AI Insights Endpoint (protected, forwards to Python backend)
+  app.post("/api/ai-insight", isAuthenticated, async (req: any, res) => {
+    try {
+      const response = await fetch("http://localhost:8001/api/ai-insight", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...req.body,
+          userId: req.user.claims.sub,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Python AI service error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("AI Insight error:", error);
+      res.status(500).json({
+        error: "AI Insight generation failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
