@@ -4,13 +4,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BacktestResult } from "@shared/schema";
 import PerformanceChart from "./performance-chart";
-import { TrendingUp, TrendingDown, DollarSign, Target, BarChart3, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Target, BarChart3, Activity, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface BacktestResultsProps {
   result: BacktestResult;
 }
 
 export default function BacktestResults({ result }: BacktestResultsProps) {
+  const exportCSV = (trades: any[]) => {
+    const headers = ["Date", "Action", "Price", "Shares", "Value", "Commission", "Slippage", "PnL"];
+    const rows = trades.map(t => [
+      t.date,
+      t.action.toUpperCase(),
+      t.price,
+      t.shares,
+      t.value,
+      t.commission || 0,
+      t.slippage || 0,
+      t.pnl || 0
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${result.ticker}_trades_${result.strategy}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportJSON = (data: any) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+    const link = document.createElement("a");
+    link.setAttribute("href", dataStr);
+    link.setAttribute("download", `${result.ticker}_backtest_${result.strategy}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -271,12 +305,34 @@ export default function BacktestResults({ result }: BacktestResultsProps) {
         </TabsContent>
 
         <TabsContent value="trades">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trade History</CardTitle>
-              <CardDescription>
-                All executed trades during the backtest period
-              </CardDescription>
+          <Card className="bg-slate-950 border-slate-900 text-slate-100">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-slate-900/60">
+              <div>
+                <CardTitle>Trade History</CardTitle>
+                <CardDescription>
+                  All executed trades during the backtest period
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportCSV(result.trades)}
+                  className="text-xs bg-slate-900 border-slate-800 text-slate-350 hover:bg-slate-800"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Export CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportJSON(result)}
+                  className="text-xs bg-slate-900 border-slate-800 text-slate-350 hover:bg-slate-800"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Export JSON
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {result.trades.length > 0 ? (
